@@ -27,6 +27,19 @@ class Auto:
     def __init__(self, handle):
         self.handle = handle
 
+    def resetServer():
+        """
+        Reset Server ADB
+        """
+        subprocess.call("adb kill-server", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        time.sleep(2)
+        subprocess.call("adb start-server", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        time.sleep(3)
+
+    def check_wifi(self):
+        result = subprocess.check_output(f'adb -s {self.handle} shell settings get global wifi_on', shell=True, text=True)
+        return result.strip()
+
     def click(self, x, y):
         subprocess.Popen(f'adb -s {self.handle} shell input tap {x} {y}', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
@@ -90,8 +103,6 @@ def get_devices():
 devices_list = get_devices()
 thread_count = len(devices_list)
 
-unique_lines = set()
-
 class starts(threading.Thread):
     def __init__(self, device):
         super().__init__()
@@ -108,39 +119,65 @@ class starts(threading.Thread):
                 if not d.info:  # Kiểm tra thiết bị có sẵn không
                     print(f"Thiết bị {device} không sẵn sàng.")
                     return
-                # d(resourceId="com.titantech.showmyipaddress:id/btn_recheckip").click()
-                # d(resourceId="com.sec.android.app.launcher:id/iconview_titleView", text="TikTok").long_click()
-                # d.press('home')
-                # d.xpath('//*[@content-desc="Show My IP Address"]/android.widget.ImageView[1]').click()
-                # time.sleep(5)
-                # with open("proxy.txt", "r", encoding="utf-8") as file:
-                #     for line in file:
-                #         line = line.strip()
-                #         if line and line not in unique_lines:
-                #             d2.changeProxy(line)
-                #             unique_lines.add(line)
-                #             print(f"Thiết bị {device} thay đổi {line} thành công")
-                # d.press('home')
-                # d(resourceId="com.sec.android.app.launcher:id/iconview_titleView", text="TikTok").click()
-                # d.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/it8"]/android.widget.ImageView[1]').click()
-                # d(resourceId="com.ss.android.ugc.trill:id/it8").click()
-                # d(text="Hồ sơ").click()
-                # d(text="Trang chủ").click()
-                d.click(34,264)
-                time.sleep(3)
-                # time.sleep(9.0)
-                # d.send_keys("Minrie Official")
-                
-                # # d(resourceId="com.ss.android.ugc.trill:id/mzx").click()
-                # i = 0
-                # while i < 3:
-                #     d.swipe_ext("up", scale=0.8)
-                #     time.sleep(8.0)
-                #     i += 1
+                print(f"Thiết bị {device} có {d2.check_wifi()}")
             except Exception as e:
                 print(f"Lỗi khi kết nối thiết bị {device}: {e}")
         batdau(device)
 
+class Controller:
+    def __init__(self, device_id=None):
+        self.device = u2.connect(device_id)
+        print(f"Đã kết nối với thiết bị: {self.device.info['serial']}")
+
+    def unlock_device(self):
+        """Mở khóa màn hình nếu đang tắt."""
+        if self.device.info['screenOn'] is False:
+            self.device.screen_on()
+            print("Màn hình đã được bật.")
+
+    def open_app(self, package_name):
+        """Mở ứng dụng theo tên gói (package name)."""
+        self.device.app_start(package_name)
+        print(f"Đã mở ứng dụng: {package_name}")
+        time.sleep(2)
+
+    def click_element(self, resource_id):
+        """Tìm và nhấn vào một phần tử theo resource-id."""
+        if self.device(resourceId=resource_id).exists(timeout=5):
+            self.device(resourceId=resource_id).click()
+            print(f"Đã nhấn vào phần tử: {resource_id}")
+        else:
+            print(f"Không tìm thấy phần tử: {resource_id}")
+
+    def input_text(self, resource_id, text):
+        """Nhập văn bản vào ô nhập liệu."""
+        if self.device(resourceId=resource_id).exists(timeout=5):
+            self.device(resourceId=resource_id).set_text(text)
+            print(f"Đã nhập văn bản vào {resource_id}: {text}")
+        else:
+            print(f"Không tìm thấy ô nhập liệu: {resource_id}")
+
+    def take_screenshot(self, filename="screenshot.png"):
+        """Chụp ảnh màn hình và lưu lại."""
+        self.device.screenshot(filename)
+        print(f"Ảnh chụp màn hình đã lưu: {filename}")
+
+    def scroll_down(self):
+        """Cuộn xuống trong ứng dụng."""
+        self.device.swipe(500, 1500, 500, 500)
+        print("Đã cuộn xuống.")
+
+    def close_app(self, package_name):
+        """Đóng ứng dụng theo package name."""
+        self.device.app_stop(package_name)
+        print(f"Đã đóng ứng dụng: {package_name}")
+
+    def disconnect(self):
+        """Ngắt kết nối với thiết bị."""
+        self.device.service("uiautomator").stop()
+        print("Đã ngắt kết nối với thiết bị.")
+
+# Main method
 def main(m):
     device = devices_list[m]
     run = starts(device)
