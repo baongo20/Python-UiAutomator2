@@ -21,11 +21,12 @@ from uiautomator2 import Direction
 class Auto:
     def __init__(self, device_id):
         self.device = u2.connect(device_id)
-        # print(f"Đã kết nối với thiết bị: {self.device.info['serial']}")
 
+    # Mở app
     def open_app(self):
-        self.device.click(0.148, 0.141)
+        self.device.app_start("com.ss.android.ugc.trill")
 
+    # Đóng app
     def close_app(self):
         self.device.app_stop("com.ss.android.ugc.trill")
 
@@ -33,22 +34,23 @@ class Auto:
     def swipe_video(self, video: int):
         i = 1
         while i <= video:
-            time.sleep(8.0)
             self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
             time.sleep(random.randint(5, 10))
-            if self.device(resourceId="com.ss.android.ugc.trill:id/deu").exists():
-                self.device(resourceId="com.ss.android.ugc.trill:id/deu").click()
+            if self.device(resourceId="com.ss.android.ugc.trill:id/dt4").exists:
+                self.device(resourceId="com.ss.android.ugc.trill:id/dt4").click()
                 time.sleep(random.randint(2, 5))
-                self.device(resourceId="com.ss.android.ugc.trill:id/cf4").click()
+                self.device(resourceId="com.ss.android.ugc.trill:id/cos").click()
                 self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
+                time.sleep(2.0)
                 self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
                 time.sleep(5.0)
                 self.device.click(0.47, 0.178)
             else:
                 self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
+                time.sleep(8.0)
             i += 1
 
-    # Tìm kiếm chủ đề theo từ khỏa
+    # Tìm kiếm chủ đề theo từ khóa
     def find_key_word(self, text: str):
         # self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/mi7"]/android.widget.ImageView[2]').click()
         self.device.click(0.941, 0.058)
@@ -74,6 +76,56 @@ class Auto:
         time.sleep(3.0)
         self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
         self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
+
+    # Xem live
+    def watch_live(self):
+        self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/nty"]/android.widget.ImageView[1]').click()
+        time.sleep(5.0)
+        self.device.swipe_ext(Direction.FORWARD)
+        time.sleep(5.0)
+        self.device.swipe_ext(Direction.FORWARD)
+        time.sleep(5.0)
+        # Bình luận live
+        self.device(resourceId="com.ss.android.ugc.trill:id/ebx").click()
+        time.sleep(2.0)
+        for char in "Nice bro":
+            self.device._send_keys_with_ime(char)
+            time.sleep(random.uniform(0.08, 0.3))
+        self.device.press('enter')
+
+    # Vào xem giỏ hàng
+    def click_store(self, watch: int):
+        self.device(text="Cửa hàng").click()
+        time.sleep(9.0)
+        while self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/fhp"]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/com.lynx.component.svg.UISvg[1]').exists:
+            self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/fhp"]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/com.lynx.component.svg.UISvg[1]').click()
+        i = 1
+        while i <= watch:
+            self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.7, 1.0))
+            time.sleep(random.randint(2, 5))
+            i += 1
+
+    # Vào trang cá nhân
+    def click_profile(self):
+        # self.device(text="Hồ sơ").click()
+        # time.sleep(5.0)
+        # self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/kh_"]/android.widget.ImageView[2]').click()
+        # time.sleep(1.0)
+        # self.device(resourceId="com.ss.android.ugc.trill:id/uy", text="Cài đặt và quyền riêng tư").click()
+        # self.device.swipe(500, 1500, 500, 500, duration=1)
+        # self.device(text="Ngôn ngữ").click()
+        # self.device(text="Ngôn ngữ ứng dụng").click()
+        # self.device.swipe_ext('up', scale=0.9)
+        # self.device(resourceId="com.ss.android.ugc.trill:id/r0s", text="Tiếng Việt").click()
+        self.device(resourceId="com.ss.android.ugc.trill:id/kh_").click()
+
+    # Đóng tất cả app chạy ngầm
+    def close_recent_apps(self):
+        self.device.press('recent')
+        if self.device(resourceId="com.miui.home:id/clearAnimView").exists:
+            self.device(resourceId="com.miui.home:id/clearAnimView").click()
+        time.sleep(1.0)
+        self.device.press('home')
         
 
 def get_devices():
@@ -97,29 +149,18 @@ class starts(threading.Thread):
         self.device = device
        
     def run(self):
-        # print(f"Khởi chạy cho thiết bị: {self.device}")
+
         try:
             d = Auto(self.device)
             d3 = ADB(self.device)
             if not d.device.info:
                 print(f"Thiết bị {self.device} không sẵn sàng.")
                 return
-            
-            
-            # d.find_key_word("Minrie Official")
-            # d.back()
-            d.keep_find_key_word("make up")
 
-            
-            
+            d.swipe_video(5)
             
 
-            # # swipe 10 videos
-            # i = 1
-            # while i <= 4:
-            #     d.swipe_ext('up', scale=random.uniform(0.8, 1.0))
-            #     time.sleep(random.randint(5, 10))
-            #     i += 1
+
 
             # # likes video và xem bình luận
             # if d(resourceId="com.ss.android.ugc.trill:id/dt4").exists():
