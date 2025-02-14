@@ -17,6 +17,35 @@ except:
 import uiautomator2 as u2
 from uiautomator2 import Direction
 
+def bypass_slide(devices):
+    pipe = subprocess.Popen(f'adb -s {devices} exec-out screencap -p',
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE, 
+                        shell=True)
+        #image_bytes = pipe.stdout.read().replace(b'\r\n', b'\n')
+    image_bytes = pipe.stdout.read()
+    image = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
+    # img = image[430:765, 102:648] # cắt chỗ có captcha # cut zone captcha
+    img = image[360:580, 100:440]
+    # img = image[400:1505, 80:1248]
+    #cv2.imshow("a", img)
+    #cv2.waitKey(0)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img3 = cv2.Canny(gray, 200, 200, L2gradient=True)
+    kernel = np.ones([23,23]) # Tạo kernel
+    kernel[2:,2:] = -0.1
+    im = cv2.filter2D(img3/255, -1, kernel)
+    im1 = im[:,:125]
+    y1,x1 = np.argmax(im1)//im1.shape[1], np.argmax(im1)%im1.shape[1] # Tìm vị trí 1 chính xác
+    im2 = im[:,125:]
+    y2,x2 = np.argmax(im2)//im2.shape[1], np.argmax(im2)%im2.shape[1] + 125 # Tìm vị trí 1 chính xác
+    # cv2.rectangle(img, (x1,y1), (x1+50, y1+50), 255, 2)
+    # cv2.rectangle(img, (x2,y2), (x2+50, y2+50), 255, 2)
+    # plt.imshow(img)
+    # plt.show()
+    return x2-x1
+
 
 class Auto:
     def __init__(self, device_id):
@@ -24,7 +53,7 @@ class Auto:
 
     # Mở app
     def open_app(self):
-        self.device.app_start("com.ss.android.ugc.trill")
+        self.device(resourceId="com.sec.android.app.launcher:id/iconview_titleView", text="TikTok").click()
 
     # Đóng app
     def close_app(self):
@@ -35,11 +64,11 @@ class Auto:
         i = 1
         while i <= video:
             self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
-            time.sleep(random.randint(5, 10))
-            if self.device(resourceId="com.ss.android.ugc.trill:id/dt4").exists:
-                self.device(resourceId="com.ss.android.ugc.trill:id/dt4").click()
+            time.sleep(random.randint(5, 15))
+            if self.device(resourceId="com.ss.android.ugc.trill:id/deu").exists:
+                self.device(resourceId="com.ss.android.ugc.trill:id/deu").click()
                 time.sleep(random.randint(2, 5))
-                self.device(resourceId="com.ss.android.ugc.trill:id/cos").click()
+                self.device(resourceId="com.ss.android.ugc.trill:id/cf4").click()
                 self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
                 time.sleep(2.0)
                 self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
@@ -47,7 +76,7 @@ class Auto:
                 self.device.click(0.47, 0.178)
             else:
                 self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
-                time.sleep(8.0)
+                time.sleep(random.randint(5, 15))
             i += 1
 
     # Tìm kiếm chủ đề theo từ khóa
@@ -79,14 +108,14 @@ class Auto:
 
     # Xem live
     def watch_live(self):
-        self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/nty"]/android.widget.ImageView[1]').click()
-        time.sleep(5.0)
+        # self.device.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/mi7"]/android.widget.ImageView[1]').click()
+        time.sleep(10.0)
         self.device.swipe_ext(Direction.FORWARD)
-        time.sleep(5.0)
+        time.sleep(random.randint(5, 15))
         self.device.swipe_ext(Direction.FORWARD)
-        time.sleep(5.0)
+        time.sleep(random.randint(5, 20))
         # Bình luận live
-        self.device(resourceId="com.ss.android.ugc.trill:id/ebx").click()
+        self.device(resourceId="com.ss.android.ugc.trill:id/dx8").click()
         time.sleep(2.0)
         for char in "Nice bro":
             self.device._send_keys_with_ime(char)
@@ -122,10 +151,38 @@ class Auto:
     # Đóng tất cả app chạy ngầm
     def close_recent_apps(self):
         self.device.press('recent')
-        if self.device(resourceId="com.miui.home:id/clearAnimView").exists:
-            self.device(resourceId="com.miui.home:id/clearAnimView").click()
-        time.sleep(1.0)
+        if self.device(resourceId="com.sec.android.app.launcher:id/clear_all_button").exists:
+            self.device(resourceId="com.sec.android.app.launcher:id/clear_all_button").click()
+        time.sleep(2.0)
         self.device.press('home')
+
+    # Mở app check proxy
+    def open_proxy_app(self):
+        self.device.xpath('//*[@content-desc="Show My IP Address"]/android.widget.ImageView[1]').click()
+        time.sleep(1.0)
+        self.device(resourceId="com.titantech.showmyipaddress:id/btn_recheckip").click()
+
+    # Trở về home
+    def return_home(self):
+        self.device.press('home')
+
+    # Check pop-up window
+    def check_window(self):
+        if self.device(text="Allow access to phone data?").exists:
+            return True
+        return False
+    
+    # click OK
+    def click(self):
+        self.device(resourceId="android:id/button1").click()
+
+    # Start session
+    def init_session(self):
+        self.device.session("com.ss.android.ugc.trill", attach=True)
+
+    # Kiểm tra xem app đang chạy là gì?
+    def check_current_app(self):
+        print(f'{self.device} đang chạy {self.device.app_current()}')
         
 
 def get_devices():
@@ -157,61 +214,35 @@ class starts(threading.Thread):
                 print(f"Thiết bị {self.device} không sẵn sàng.")
                 return
 
-            d.swipe_video(5)
             
-
-
-
-            # # likes video và xem bình luận
-            # if d(resourceId="com.ss.android.ugc.trill:id/dt4").exists():
-            #     d(resourceId="com.ss.android.ugc.trill:id/dt4").click()
-            #     time.sleep(5.0)
-            #     d(resourceId="com.ss.android.ugc.trill:id/cos").click()
-            #     j = 1
-            #     while j <= 2:
-            #         d.swipe_ext('up', scale=0.8)
-            #         time.sleep(2.0)
-            #         j += 1
-            #     d.click(0.578, 0.236)
-            # else:
-            #     d.swipe_ext(Direction.FORWARD, scale=0.9)
-
-            # # Tìm kiếm chủ đề và lướt xem
-            # # d.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/nty"]/android.widget.ImageView[2]').click()
-            # # time.sleep(1)
-            # # for char in "Minrie Official":
-            # #     d.send_keys(char)
-            # #     time.sleep(random.uniform(0.08, 0.3))
-            # # print()
-            # # d(resourceId="com.ss.android.ugc.trill:id/odi").click()
-            # # d.swipe_ext(Direction.FORWARD, scale=1.0)
-            # # time.sleep(1.0)
-            # # d.swipe_ext(Direction.FORWARD, scale=1.0)
-
-            # # Xem live, lướt live và bình luận
-            # d.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/nty"]/android.widget.ImageView[1]').click()
+            if d.check_window():
+                d.click()
+                time.sleep(10.0)
+            
+            # d.return_home()
+            # time.sleep(1.0)
+            # d.open_app()
             # time.sleep(15.0)
-            # d.swipe_ext(Direction.FORWARD)
-            # time.sleep(5.0)
-            # d.swipe_ext(Direction.FORWARD)
-            # d(resourceId="com.ss.android.ugc.trill:id/ebx").click()
-            # for char in "Nice bro!":
-            #     d.send_keys(char)
-            #     time.sleep(random.uniform(0.08, 0.3))
-            # print()
-            # d.press('enter')
-            # time.sleep(2.0)
-            # d(resourceId="com.ss.android.ugc.trill:id/cgv").click()
+            # d.swipe_video(6)
+            # d.check_current_app()
 
-            # # Vào cửa hàng
-            # d(text="Cửa hàng").click()
-            # for i in range(0, 2, 1):
-            #     d.swipe_ext('up', scale=0.9)
-            #     time.sleep(1)
+            def capcha(d3):
+                poin = d3.find('img\\slide.png')
+    
+                if poin:  # Kiểm tra xem có tọa độ nào không
+                    d3.slideCaptcha(poin[0][0], poin[0][1])
+        
+                time.sleep(2)
 
-            # # thoát quảng cáo
-            # d.xpath('//*[@resource-id="com.ss.android.ugc.trill:id/fhp"]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/com.lynx.tasm.behavior.ui.LynxFlattenUI[17]').click()
-            # d(text="Hộp thư").click()
+            capcha(d3)  # Gọi hàm
+
+            
+            # def min1(d):
+            #     poin  = d.find('img\\1.png')
+            #     if poin > [(0, 0)] :
+            #         d.click(poin[0][0],poin[0][1])
+            #         capcha(d)
+            # min1(d)
 
 
 
@@ -230,10 +261,48 @@ class ADB:
     def __init__(self, handle):
         self.handle = handle
 
+    def screen_capture(self):
+        #os.system(f'adb -s {self.handle} exec-out screencap -p > {name}.png')
+        pipe = subprocess.Popen(f'adb -s {self.handle} exec-out screencap -p',
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE, shell=True)
+        #image_bytes = pipe.stdout.read().replace(b'\r\n', b'\n')
+        image_bytes = pipe.stdout.read()
+        image = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
+        return image
+
+    def swipe(self, x1, y1, x2, y2):
+        subprocess.call(f"adb -s {self.handle} shell input touchscreen swipe {x1} {y1} {x2} {y2} 1000", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    def find(self,img='',threshold=0.99):
+        img = cv2.imread(img) #sys.path[0]+"/"+img)
+        img2 = self.screen_capture()    
+        result = cv2.matchTemplate(img,img2,cv2.TM_CCOEFF_NORMED)
+        loc = np.where(result >= threshold)
+        retVal = list(zip(*loc[::-1]))
+        #image = cv2.rectangle(img2, retVal[0],(retVal[0][0]+img.shape[0],retVal[0][1]+img.shape[1]), (0,250,0), 2)
+        #cv2.imshow("test",image)
+        #cv2.waitKey(0)
+        #cv2.destroyWindow("test")
+        return retVal
+
+    def slideCaptcha(self,x,y):
+        # adb.excuteAdb(sr, "adb shell screencap -p /sdcard/cap.png")
+        # adb.excuteAdb(sr, f"adb pull /sdcard/cap.png {sr}/captcha.png")
+        captcha = bypass_slide(self.handle)
+        self.swipe(round(x), round(y), int(x)+int(captcha), round(y))
+        return True
+
+    # Restart wifi
+    def restart_wifi(self):
+        subprocess.run(f'adb -s {self.handle} shell svc wifi disable && adb -s {self.handle} shell svc wifi enable', shell=True, check=True)
+        print(f'{self.handle} restart wifi succeed!')
+
     def chage_rotation(self):
         subprocess.call(f'adb -s {self.handle} shell settings put system user_rotation 0')
         print(f'Device {self.handle} change rotation succeed')
     
+    # Đổi proxy
     def changeProxy(self, ip):
         """
         Input Proxy Http IP:PORT
@@ -241,17 +310,19 @@ class ADB:
         """
         subprocess.call(f'adb -s {self.handle} shell settings put global http_proxy {ip}', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
+    # Xóa proxy
     def remProxy(self):
         """
         Input Proxy Http IP:PORT
         Thêm Proxy Http IP:PORT
         """
         subprocess.call(f'adb -s {self.handle} shell settings put global http_proxy :0', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        # print(f'{self.handle} remove proxy succeed')
+        print(f'{self.handle} remove proxy succeed')
 
+    # Kiểm tra proxy
     def get_proxy(self):
-        proxy = subprocess.check_output("adb shell settings get global http_proxy")
-        print(f'{self.handle} có {proxy}')
+        proxy = subprocess.check_output(f"adb -s {self.handle} shell settings get global http_proxy", shell=True).decode().strip()
+        print(f'{self.handle} có proxy: {proxy if proxy else "Không có proxy"}')
 
 def assign_proxies(proxy_file):
     """
