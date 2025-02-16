@@ -17,6 +17,9 @@ except:
 import uiautomator2 as u2
 from uiautomator2 import Direction
 
+def delay(delay_time: float):
+    time.sleep(delay_time)
+
 def bypass_slide(devices):
     pipe = subprocess.Popen(f'adb -s {devices} exec-out screencap -p',
                         stdin=subprocess.PIPE,
@@ -51,6 +54,12 @@ class Auto:
     def __init__(self, device_id):
         self.device = u2.connect(device_id)
 
+    # Kiểm tra app có mở hay chưa
+    def check_is_opened(self):
+        if ("com.ss.android.ugc.trill" or "com.zhiliaoapp.musically") == self.device.app_current()['package']:
+            return True
+        return False
+
     # Mở app
     def open_app(self):
         self.device(resourceId="com.sec.android.app.launcher:id/iconview_titleView", text="TikTok").click()
@@ -63,20 +72,26 @@ class Auto:
     def swipe_video(self, video: int):
         i = 1
         while i <= video:
+            time.sleep(random.uniform(5.0, 15.0))
             self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
-            time.sleep(random.randint(5, 15))
-            if self.device(resourceId="com.ss.android.ugc.trill:id/deu").exists:
-                self.device(resourceId="com.ss.android.ugc.trill:id/deu").click()
-                time.sleep(random.randint(2, 5))
-                self.device(resourceId="com.ss.android.ugc.trill:id/cf4").click()
-                self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
-                time.sleep(2.0)
-                self.device.swipe_ext(Direction.FORWARD, scale=random.uniform(0.8, 1.0))
-                time.sleep(5.0)
-                self.device.click(0.47, 0.178)
-            else:
-                self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
-                time.sleep(random.randint(5, 15))
+            i += 1
+
+    # Thích video
+    def like_video(self):
+        if self.device(resourceId="com.ss.android.ugc.trill:id/deu").exists:
+            self.device(resourceId="com.ss.android.ugc.trill:id/deu").click()
+
+    # Bình luận video
+    def comment_video(self):
+        if self.device(resourceId="com.ss.android.ugc.trill:id/cf4").exists:
+            self.device(resourceId="com.ss.android.ugc.trill:id/cf4").click()
+
+    # Lướt bình luận
+    def swipe_comments(self, time: int):
+        i = 1
+        while i <= time:
+            self.device.swipe_ext(Direction.FORWARD, scale=0.8)
+            time.sleep(5.0)
             i += 1
 
     # Tìm kiếm chủ đề theo từ khóa
@@ -158,7 +173,7 @@ class Auto:
 
     # Mở app check proxy
     def open_proxy_app(self):
-        self.device.xpath('//*[@content-desc="Show My IP Address"]/android.widget.ImageView[1]').click()
+        # self.device.xpath('//*[@content-desc="Show My IP Address"]/android.widget.ImageView[1]').click()
         time.sleep(1.0)
         self.device(resourceId="com.titantech.showmyipaddress:id/btn_recheckip").click()
 
@@ -179,10 +194,6 @@ class Auto:
     # Start session
     def init_session(self):
         self.device.session("com.ss.android.ugc.trill", attach=True)
-
-    # Kiểm tra xem app đang chạy là gì?
-    def check_current_app(self):
-        print(f'{self.device} đang chạy {self.device.app_current()}')
         
 
 def get_devices():
@@ -215,34 +226,16 @@ class starts(threading.Thread):
                 return
 
             
-            if d.check_window():
+            while d.check_window():
                 d.click()
-                time.sleep(10.0)
-            
-            # d.return_home()
-            # time.sleep(1.0)
-            # d.open_app()
-            # time.sleep(15.0)
-            # d.swipe_video(6)
-            # d.check_current_app()
 
-            def capcha(d3):
-                poin = d3.find('img\\slide.png')
-    
-                if poin:  # Kiểm tra xem có tọa độ nào không
-                    d3.slideCaptcha(poin[0][0], poin[0][1])
-        
-                time.sleep(2)
+            delay(10.0)
 
-            capcha(d3)  # Gọi hàm
+            if d.check_is_opened() == False:
+                d.open_app()
+                delay(10.0)
 
-            
-            # def min1(d):
-            #     poin  = d.find('img\\1.png')
-            #     if poin > [(0, 0)] :
-            #         d.click(poin[0][0],poin[0][1])
-            #         capcha(d)
-            # min1(d)
+            d.swipe_video(2)
 
 
 
