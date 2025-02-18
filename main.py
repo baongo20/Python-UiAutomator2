@@ -56,13 +56,13 @@ class Auto:
 
     # Kiểm tra app có mở hay chưa
     def check_is_opened(self):
-        if ("com.ss.android.ugc.trill" or "com.zhiliaoapp.musically") == self.device.app_current()['package']:
+        if ("com.ss.android.ugc.trill" == self.device.app_current()['package']) or ("com.zhiliaoapp.musically" == self.device.app_current()['package']):
             return True
         return False
 
     # Mở app
     def open_app(self):
-        self.device(resourceId="com.sec.android.app.launcher:id/iconview_titleView", text="TikTok").click()
+        self.device(text="TikTok").click()
 
     # Đóng app
     def close_app(self):
@@ -72,7 +72,7 @@ class Auto:
     def swipe_video(self, video: int):
         i = 1
         while i <= video:
-            time.sleep(random.uniform(5.0, 15.0))
+            self.device.settings['wait_timeout'] = 10.0
             self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
             i += 1
 
@@ -191,9 +191,10 @@ class Auto:
     def click(self):
         self.device(resourceId="android:id/button1").click()
 
-    # Start session
-    def init_session(self):
-        self.device.session("com.ss.android.ugc.trill", attach=True)
+    # Kiểm tra có xuất hiện bảng bạn bè?
+    def check_friends(self):
+        if self.device(resourceId="com.ss.android.ugc.trill:id/lyc", text="Follow bạn bè của bạn").exists or self.device(resourceId="com.zhiliaoapp.musically:id/lyc", text="Follow bạn bè của bạn").exists:
+            self.device.click(0.794, 0.207)
         
 
 def get_devices():
@@ -229,13 +230,14 @@ class starts(threading.Thread):
             while d.check_window():
                 d.click()
 
-            delay(10.0)
-
             if d.check_is_opened() == False:
                 d.open_app()
-                delay(10.0)
 
-            d.swipe_video(2)
+            # delay(9.0)
+            # d.check_friends()
+                
+            delay(10.0)
+            d.swipe_video()
 
 
 
