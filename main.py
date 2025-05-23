@@ -56,13 +56,13 @@ class Auto:
 
     # Kiểm tra app có mở hay chưa
     def check_is_opened(self):
-        if ("com.ss.android.ugc.trill" == self.device.app_current()['package']) or ("com.zhiliaoapp.musically" == self.device.app_current()['package']):
+        if ("com.zhiliaoapp.musically" == self.device.app_current()['package']):
             return True
         return False
 
     # Mở app
     def open_app(self):
-        self.device(text="TikTok").click()
+        self.device.app_start(package_name="com.zhiliaoapp.musically", wait=True)
 
     # Đóng app
     def close_app(self):
@@ -72,7 +72,8 @@ class Auto:
     def swipe_video(self, video: int):
         i = 1
         while i <= video:
-            self.device.settings['wait_timeout'] = 10.0
+            # self.device.settings['wait_timeout'] = 10.0
+            delay(10.0)
             self.device.swipe_ext('up', scale=random.uniform(0.8, 1.0))
             i += 1
 
@@ -173,9 +174,8 @@ class Auto:
 
     # Mở app check proxy
     def open_proxy_app(self):
-        # self.device.xpath('//*[@content-desc="Show My IP Address"]/android.widget.ImageView[1]').click()
-        time.sleep(1.0)
-        self.device(resourceId="com.titantech.showmyipaddress:id/btn_recheckip").click()
+        self.device.xpath('//*[@content-desc="Show My IP Address"]/android.widget.ImageView[1]').click()
+        # time.sleep(1.0)
 
     # Trở về home
     def return_home(self):
@@ -195,6 +195,10 @@ class Auto:
     def check_friends(self):
         if self.device(resourceId="com.ss.android.ugc.trill:id/lyc", text="Follow bạn bè của bạn").exists or self.device(resourceId="com.zhiliaoapp.musically:id/lyc", text="Follow bạn bè của bạn").exists:
             self.device.click(0.794, 0.207)
+
+    # Kiểm tra app đang chạy
+    def apps_running(self):
+        print(self.device.app_current())
         
 
 def get_devices():
@@ -225,19 +229,26 @@ class starts(threading.Thread):
             if not d.device.info:
                 print(f"Thiết bị {self.device} không sẵn sàng.")
                 return
-
             
-            while d.check_window():
-                d.click()
+            # Xóa proxy
+            # d3.remProxy()
 
-            if d.check_is_opened() == False:
-                d.open_app()
+            # d.open_proxy_app()
+            
+
+            # while d.check_window():
+            #     d.click()
+
+            # delay(10.0)
+
+            # if d.check_is_opened() == False:
+            #     d.open_app()
 
             # delay(9.0)
             # d.check_friends()
                 
-            delay(10.0)
-            d.swipe_video()
+            # delay(10.0)
+            # d.swipe_video(53)
 
 
 
@@ -294,7 +305,7 @@ class ADB:
         print(f'{self.handle} restart wifi succeed!')
 
     def chage_rotation(self):
-        subprocess.call(f'adb -s {self.handle} shell settings put system user_rotation 0')
+        subprocess.call(f'adb -s {self.handle} shell settings put system user_rotation 1')
         print(f'Device {self.handle} change rotation succeed')
     
     # Đổi proxy
@@ -348,7 +359,7 @@ def assign_proxies(proxy_file):
 
 if __name__ == "__main__":
     # Đọc proxy từ file và gán cho từng thiết bị trước khi chạy
-    # assign_proxies("proxy.txt")
+    assign_proxies("proxy.txt")
     
     for m in range(thread_count):
         main(m)
